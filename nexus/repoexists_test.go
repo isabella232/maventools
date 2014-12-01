@@ -1,7 +1,6 @@
 package nexus
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,7 +9,9 @@ import (
 
 func TestRepoExists(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Printf("path: %s\n", r.URL.Path)
+		if r.Method != "GET" {
+			t.Fatalf("Wanted GET but got %s\n", r.Method)
+		}
 		if !strings.HasSuffix(r.URL.Path, "/service/local/repositories/somerepo") {
 			t.Fatalf("Wanted URL suffix /service/local/repositories/somerepo but got: %s\n", r.URL.Path)
 		}

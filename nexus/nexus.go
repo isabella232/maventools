@@ -45,3 +45,28 @@ func (client *Client) RepositoryExists(repositoryID string) (bool, error) {
 
 	return resp.StatusCode == 200, nil
 }
+
+func (client *Client) DeleteRepository(repositoryID string) error {
+	req, err := http.NewRequest("DELETE", client.baseURL+"/service/local/repositories/"+repositoryID, nil)
+	if err != nil {
+		return err
+	}
+	req.SetBasicAuth(client.username, client.password)
+	req.Header.Add("Accept", "application/json")
+
+	resp, err := client.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if _, err := ioutil.ReadAll(resp.Body); err != nil {
+		return err
+	}
+
+	if resp.StatusCode != 204 && resp.StatusCode != 404 {
+		return fmt.Errorf("Client.DeleteRepository(): unexpected response status: %d\n", resp.StatusCode)
+	}
+
+	return nil
+}
