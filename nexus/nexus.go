@@ -10,10 +10,10 @@ import (
 
 type (
 	createrepo struct {
-		Data Data `json:"data"`
+		Data CreateRepoData `json:"data"`
 	}
 
-	Data struct {
+	CreateRepoData struct {
 		ContentResourceURI string `json:"contentResourceURI"`
 		Id                 string `json:"id"`
 		Name               string `json:"name"`
@@ -23,6 +23,27 @@ type (
 		RepoType           string `json:"repoType"`
 		RepoPolicy         string `json:"repoPolicy"`
 		Exposed            bool   `json:"exposed"`
+	}
+
+	RepoGroup struct {
+		Data RepositoryGroupData `json:"data"`
+	}
+
+	repository struct {
+		Name        string `json:"name"`
+		ID          string `json:"id"`
+		ResourceURI string `json:resourceURI"`
+	}
+
+	RepositoryGroupData struct {
+		ID                 string       `json:"id"`
+		Provider           string       `json:"provider"`
+		Name               string       `json:"name"`
+		Repositories       []repository `json:"repositories"`
+		Format             string       `json:"format"`
+		RepoType           string       `json:"repoType"`
+		Exposed            bool         `json:"exposed"`
+		ContentResourceURI string       `json:"contentResourceURI"`
 	}
 
 	Client struct {
@@ -68,7 +89,7 @@ func (client *Client) RepositoryExists(repositoryID string) (bool, error) {
 
 func (client *Client) CreateRepository(repositoryID string) error {
 	repo := createrepo{
-		Data: Data{
+		Data: CreateRepoData{
 			Id:                 repositoryID,
 			Name:               repositoryID,
 			Provider:           "maven2",
@@ -134,4 +155,36 @@ func (client *Client) DeleteRepository(repositoryID string) error {
 	}
 
 	return nil
+}
+
+// RepositoryGroup gets a repository group based on the given group ID.
+func (client *Client) RepositoryGroup(groupID string) (RepoGroup, error) {
+	req, err := http.NewRequest("GET", client.baseURL+"/service/local/repo_group/"+groupID, nil)
+	if err != nil {
+		return RepoGroup{}, err
+	}
+	req.SetBasicAuth(client.username, client.password)
+	req.Header.Add("Accept", "application/json")
+
+	resp, err := client.httpClient.Do(req)
+	if err != nil {
+		return RepoGroup{}, err
+
+	}
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return RepoGroup{}, err
+	}
+
+	if resp.StatusCode != 200 {
+		return RepoGroup{}, fmt.Errorf("Client.RepositoryGroup(): unexpected response status: %d\n", resp.StatusCode)
+	}
+
+	var repogroup RepoGroup
+	if err := json.Unmarshal(data, &repogroup); err != nil {
+		return RepoGroup{}, err
+	}
+	return repogroup, nil
 }
