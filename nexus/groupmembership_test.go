@@ -19,4 +19,14 @@ func TestGroupMembership(t *testing.T) {
 		t.Fatalf("Wanted true but got false\n")
 	}
 
+	removeRepo("foo", &group)
+	if len(group.Data.Repositories) != 1 {
+		t.Fatalf("Wanted 1 but got %d\n", len(group.Data.Repositories))
+	}
+	if repoIsInGroup("foo", group) {
+		t.Fatalf("Wanted false but got true\n")
+	}
+	if repoIsNotInGroup("bar", group) {
+		t.Fatalf("Wanted false but got true\n")
+	}
 }
