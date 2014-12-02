@@ -165,9 +165,9 @@ func (client *Client) DeleteRepository(repositoryID string) error {
 	return nil
 }
 
-// RepositoryGroup gets a repository group based on the given group ID.
+// RepositoryGroup gets a repository group specified by groupID.
 func (client *Client) RepositoryGroup(groupID string) (RepoGroup, error) {
-	req, err := http.NewRequest("GET", client.baseURL+"/service/local/repo_group/"+groupID, nil)
+	req, err := http.NewRequest("GET", client.baseURL+"/service/local/repo_groups/"+groupID, nil)
 	if err != nil {
 		return RepoGroup{}, err
 	}

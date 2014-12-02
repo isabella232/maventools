@@ -33,8 +33,8 @@ func TestGetRepoGroup(t *testing.T) {
 		if r.Method != "GET" {
 			t.Fatalf("Wanted GET but got %s\n", r.Method)
 		}
-		if !strings.HasSuffix(r.URL.Path, "/service/local/repo_group/snapshotgroup") {
-			t.Fatalf("Wanted URL suffix /service/local/repo_group/snapshotgroup but got: %s\n", r.URL.Path)
+		if !strings.HasSuffix(r.URL.Path, "/service/local/repo_groups/snapshotgroup") {
+			t.Fatalf("Wanted URL suffix /service/local/repo_groups/snapshotgroup but got: %s\n", r.URL.Path)
 		}
 		if r.Header.Get("Accept") != "application/json" {
 			t.Fatalf("Wanted application/json but got %s for Accept header", r.Header.Get("Accept"))
