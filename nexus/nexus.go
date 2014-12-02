@@ -9,6 +9,7 @@ import (
 )
 
 type (
+	// The type posted in JSON format to create a new Nexus repository.
 	createrepo struct {
 		Data CreateRepoData `json:"data"`
 	}
@@ -25,6 +26,7 @@ type (
 		Exposed            bool   `json:"exposed"`
 	}
 
+	// The type retrieved or put to read or mutate a repository group.
 	RepoGroup struct {
 		Data RepositoryGroupData `json:"data"`
 	}
@@ -46,6 +48,7 @@ type (
 		ContentResourceURI string       `json:"contentResourceURI"`
 	}
 
+	// A Nexus client
 	Client struct {
 		baseURL    string // http://localhost:8081/nexus
 		username   string
@@ -54,7 +57,7 @@ type (
 	}
 )
 
-// NewClient creates a new Nexus client on which subsequent service methods are called.  The base URL typically takes
+// NewClient creates a new Nexus client on which subsequent service methods are called.  The baseURL typically takes
 // the form http://host:port/nexus.
 func NewClient(baseURL, username, password string) *Client {
 	client := &http.Client{}
