@@ -54,14 +54,14 @@ type (
 	}
 )
 
-func init() {
-}
-
+// NewClient creates a new Nexus client on which subsequent service methods are called.  The base URL typically takes
+// the form http://host:port/nexus.
 func NewClient(baseURL, username, password string) *Client {
 	client := &http.Client{}
 	return &Client{baseURL, username, password, client}
 }
 
+// RepositoryExists checks whether a given repository, specified by repositoryID ,exists.
 func (client *Client) RepositoryExists(repositoryID string) (bool, error) {
 	req, err := http.NewRequest("GET", client.baseURL+"/service/local/repositories/"+repositoryID, nil)
 	if err != nil {
@@ -87,6 +87,8 @@ func (client *Client) RepositoryExists(repositoryID string) (bool, error) {
 	return resp.StatusCode == 200, nil
 }
 
+// CreateRepository creates a new hosted Maven2 SNAPSHOT repository with the given repositoryID.  The repository name
+// will be the same as the repositoryID.
 func (client *Client) CreateRepository(repositoryID string) error {
 	repo := createrepo{
 		Data: CreateRepoData{
@@ -132,6 +134,7 @@ func (client *Client) CreateRepository(repositoryID string) error {
 	return nil
 }
 
+// DeleteRepository deletes the repository with the given repositoryID.
 func (client *Client) DeleteRepository(repositoryID string) error {
 	req, err := http.NewRequest("DELETE", client.baseURL+"/service/local/repositories/"+repositoryID, nil)
 	if err != nil {
@@ -189,15 +192,7 @@ func (client *Client) RepositoryGroup(groupID string) (RepoGroup, error) {
 	return repogroup, nil
 }
 
-func repoIsInGroup(repositoryID string, group RepoGroup) bool {
-	for _, repo := range group.Data.Repositories {
-		if repo.ID == repositoryID {
-			return true
-		}
-	}
-	return false
-}
-
+// Add RepositoryToGroup adds the given repository, specified by repositoryID, to the repository group specified by groupID.
 func (client *Client) AddRepositoryToGroup(repositoryID, groupID string) error {
 	repogroup, err := client.RepositoryGroup(groupID)
 	if err != nil {
@@ -240,4 +235,67 @@ func (client *Client) AddRepositoryToGroup(repositoryID, groupID string) error {
 	}
 
 	return nil
+}
+
+// DeleteRepositoryFromGroup removes the given repository, specified by repositoryID, to the repository group specified by groupID.
+func (client *Client) DeleteRepositoryFromGroup(repositoryID, groupID string) error {
+	repogroup, err := client.RepositoryGroup(groupID)
+	if err != nil {
+		return err
+	}
+
+	if repoIsNotInGroup(repositoryID, repogroup) {
+		return nil
+	}
+
+	repo := repository{Name: repositoryID, ID: repositoryID, ResourceURI: client.baseURL + "/service/local/repo_groups/" + groupID + "/" + repositoryID}
+	repogroup.Data.Repositories = append(repogroup.Data.Repositories, repo)
+
+	data, err := json.Marshal(&repogroup)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("PUT", client.baseURL+"/service/local/repo_groups/"+groupID, bytes.NewBuffer(data))
+	if err != nil {
+		return err
+	}
+	req.SetBasicAuth(client.username, client.password)
+	req.Header.Add("Content-type", "application/json")
+	req.Header.Add("Accept", "application/json")
+
+	resp, err := client.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("Client.AddRepositoryToGroup(): unexpected response status: %d (%s)\n", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
+
+func repoIsInGroup(repositoryID string, group RepoGroup) bool {
+	for _, repo := range group.Data.Repositories {
+		if repo.ID == repositoryID {
+			return true
+		}
+	}
+	return false
+}
+
+func repoIsNotInGroup(repositoryID string, group RepoGroup) bool {
+	for _, repo := range group.Data.Repositories {
+		if repo.ID == repositoryID {
+			return false
+		}
+	}
+	return true
 }
