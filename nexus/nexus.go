@@ -62,8 +62,7 @@ type (
 // the form http://host:port/nexus.  username and password are the credentials of an admin user capable of creating and mutating data
 // within Nexus.
 func NewClient(baseURL, username, password string) *Client {
-	client := &http.Client{}
-	return &Client{baseURL, username, password, client}
+	return &Client{baseURL, username, password, &http.Client{}}
 }
 
 // RepositoryExists checks whether a given repository specified by repositoryID exists.
