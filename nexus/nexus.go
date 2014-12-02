@@ -31,12 +31,7 @@ type (
 		Data RepositoryGroupData `json:"data"`
 	}
 
-	repository struct {
-		Name        string `json:"name"`
-		ID          string `json:"id"`
-		ResourceURI string `json:resourceURI"`
-	}
-
+	// The payload of a repository group read or mutation.
 	RepositoryGroupData struct {
 		ID                 string       `json:"id"`
 		Provider           string       `json:"provider"`
@@ -46,6 +41,12 @@ type (
 		RepoType           string       `json:"repoType"`
 		Exposed            bool         `json:"exposed"`
 		ContentResourceURI string       `json:"contentResourceURI"`
+	}
+
+	repository struct {
+		Name        string `json:"name"`
+		ID          string `json:"id"`
+		ResourceURI string `json:resourceURI"`
 	}
 
 	// A Nexus client
