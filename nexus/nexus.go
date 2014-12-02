@@ -65,7 +65,7 @@ func NewClient(baseURL, username, password string) *Client {
 	return &Client{baseURL, username, password, client}
 }
 
-// RepositoryExists checks whether a given repository, specified by repositoryID ,exists.
+// RepositoryExists checks whether a given repository specified by repositoryID exists.
 func (client *Client) RepositoryExists(repositoryID string) (bool, error) {
 	req, err := http.NewRequest("GET", client.baseURL+"/service/local/repositories/"+repositoryID, nil)
 	if err != nil {
