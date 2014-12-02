@@ -195,7 +195,7 @@ func (client *Client) RepositoryGroup(groupID string) (RepoGroup, error) {
 	return repogroup, nil
 }
 
-// Add RepositoryToGroup adds the given repository, specified by repositoryID, to the repository group specified by groupID.
+// Add RepositoryToGroup adds the given repository specified by repositoryID to the repository group specified by groupID.
 func (client *Client) AddRepositoryToGroup(repositoryID, groupID string) error {
 	repogroup, err := client.RepositoryGroup(groupID)
 	if err != nil {
@@ -240,7 +240,7 @@ func (client *Client) AddRepositoryToGroup(repositoryID, groupID string) error {
 	return nil
 }
 
-// DeleteRepositoryFromGroup removes the given repository, specified by repositoryID, to the repository group specified by groupID.
+// DeleteRepositoryFromGroup removes the given repository specified by repositoryID from the repository group specified by groupID.
 func (client *Client) DeleteRepositoryFromGroup(repositoryID, groupID string) error {
 	repogroup, err := client.RepositoryGroup(groupID)
 	if err != nil {
@@ -251,8 +251,7 @@ func (client *Client) DeleteRepositoryFromGroup(repositoryID, groupID string) er
 		return nil
 	}
 
-	repo := repository{Name: repositoryID, ID: repositoryID, ResourceURI: client.baseURL + "/service/local/repo_groups/" + groupID + "/" + repositoryID}
-	repogroup.Data.Repositories = append(repogroup.Data.Repositories, repo)
+	removeRepo(repositoryID, &repogroup)
 
 	data, err := json.Marshal(&repogroup)
 	if err != nil {
@@ -301,4 +300,14 @@ func repoIsNotInGroup(repositoryID string, group RepoGroup) bool {
 		}
 	}
 	return true
+}
+
+func removeRepo(repositoryID string, group *RepoGroup) {
+	ra := make([]repository, 0)
+	for _, repo := range group.Data.Repositories {
+		if repo.ID != repositoryID {
+			ra = append(ra, repo)
+		}
+	}
+	group.Data.Repositories = ra
 }
