@@ -51,7 +51,7 @@ type (
 	repository struct {
 		Name        string                  `json:"name"`
 		ID          maventools.RepositoryID `json:"id"`
-		ResourceURI string                  `json:resourceURI"`
+		ResourceURI string                  `json:"resourceURI"`
 	}
 
 	Client struct {
