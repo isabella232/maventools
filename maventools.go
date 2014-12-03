@@ -7,10 +7,14 @@ type RepositoryID string
 type GroupID string
 
 type ClientConfig struct {
+	// The public client interface
 	Client
-	BaseURL    string
-	Username   string
-	Password   string
+	// For Nexus clients, typically http://host:port/nexus
+	BaseURL string
+	// Admin username and password capable of updating the artifact repository
+	Username string
+	Password string
+	// Underlying network client
 	HttpClient *http.Client
 }
 
