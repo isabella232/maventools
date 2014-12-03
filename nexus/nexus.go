@@ -56,6 +56,7 @@ type (
 
 	// A Nexus client
 	Client struct {
+		//		maventools.Client
 		baseURL    string // http://localhost:8081/nexus
 		username   string
 		password   string
@@ -71,7 +72,7 @@ func NewClient(baseURL, username, password string) *Client {
 }
 
 // RepositoryExists checks whether a given repository specified by repositoryID exists.
-func (client *Client) RepositoryExists(repositoryID maventools.RepositoryID) (bool, error) {
+func (client Client) RepositoryExists(repositoryID maventools.RepositoryID) (bool, error) {
 	req, err := http.NewRequest("GET", client.baseURL+"/service/local/repositories/"+string(repositoryID), nil)
 	if err != nil {
 		return false, err
@@ -98,7 +99,7 @@ func (client *Client) RepositoryExists(repositoryID maventools.RepositoryID) (bo
 
 // CreateSnapshotRepository creates a new hosted Maven2 SNAPSHOT repository with the given repositoryID.  The repository name
 // will be the same as the repositoryID.  When error is nil, the integer return value is the underlying HTTP response code.
-func (client *Client) CreateSnapshotRepository(repositoryID maventools.RepositoryID) (int, error) {
+func (client Client) CreateSnapshotRepository(repositoryID maventools.RepositoryID) (int, error) {
 	repo := createrepo{
 		Data: CreateRepoData{
 			Id:                 repositoryID,
@@ -144,7 +145,7 @@ func (client *Client) CreateSnapshotRepository(repositoryID maventools.Repositor
 }
 
 // DeleteRepository deletes the repository with the given repositoryID.
-func (client *Client) DeleteRepository(repositoryID maventools.RepositoryID) (int, error) {
+func (client Client) DeleteRepository(repositoryID maventools.RepositoryID) (int, error) {
 	req, err := http.NewRequest("DELETE", client.baseURL+"/service/local/repositories/"+string(repositoryID), nil)
 	if err != nil {
 		return 0, err
@@ -169,7 +170,7 @@ func (client *Client) DeleteRepository(repositoryID maventools.RepositoryID) (in
 	return resp.StatusCode, nil
 }
 
-func (client *Client) repositoryGroup(groupID maventools.GroupID) (repoGroup, int, error) {
+func (client Client) repositoryGroup(groupID maventools.GroupID) (repoGroup, int, error) {
 	req, err := http.NewRequest("GET", client.baseURL+"/service/local/repo_groups/"+string(groupID), nil)
 	if err != nil {
 		return repoGroup{}, 0, err
@@ -201,7 +202,7 @@ func (client *Client) repositoryGroup(groupID maventools.GroupID) (repoGroup, in
 }
 
 // Add RepositoryToGroup adds the given repository specified by repositoryID to the repository group specified by groupID.
-func (client *Client) AddRepositoryToGroup(repositoryID maventools.RepositoryID, groupID maventools.GroupID) (int, error) {
+func (client Client) AddRepositoryToGroup(repositoryID maventools.RepositoryID, groupID maventools.GroupID) (int, error) {
 	repogroup, rc, err := client.repositoryGroup(groupID)
 	if err != nil {
 		return rc, err
@@ -250,7 +251,7 @@ func (client *Client) AddRepositoryToGroup(repositoryID maventools.RepositoryID,
 }
 
 // DeleteRepositoryFromGroup removes the given repository specified by repositoryID from the repository group specified by groupID.
-func (client *Client) DeleteRepositoryFromGroup(repositoryID maventools.RepositoryID, groupID maventools.GroupID) (int, error) {
+func (client Client) DeleteRepositoryFromGroup(repositoryID maventools.RepositoryID, groupID maventools.GroupID) (int, error) {
 	repogroup, rc, err := client.repositoryGroup(groupID)
 	if err != nil {
 		return rc, err
