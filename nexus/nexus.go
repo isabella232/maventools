@@ -31,7 +31,7 @@ type (
 	}
 
 	// The type retrieved or put to read or mutate a repository group.
-	RepoGroup struct {
+	repoGroup struct {
 		Data RepositoryGroupData `json:"data"`
 	}
 
@@ -143,66 +143,66 @@ func (client *Client) CreateSnapshotRepository(repositoryID maventools.Repositor
 }
 
 // DeleteRepository deletes the repository with the given repositoryID.
-func (client *Client) DeleteRepository(repositoryID maventools.RepositoryID) error {
+func (client *Client) DeleteRepository(repositoryID maventools.RepositoryID) (int, error) {
 	req, err := http.NewRequest("DELETE", client.baseURL+"/service/local/repositories/"+string(repositoryID), nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	req.SetBasicAuth(client.username, client.password)
 	req.Header.Add("Accept", "application/json")
 
 	resp, err := client.httpClient.Do(req)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer resp.Body.Close()
 
 	if _, err := ioutil.ReadAll(resp.Body); err != nil {
-		return err
+		return 0, err
 	}
 
 	if resp.StatusCode != 204 && resp.StatusCode != 404 {
-		return fmt.Errorf("Client.DeleteRepository(): unexpected response status: %d\n", resp.StatusCode)
+		return resp.StatusCode, fmt.Errorf("Client.DeleteRepository() response: %d\n", resp.StatusCode)
 	}
 
-	return nil
+	return resp.StatusCode, nil
 }
 
 // RepositoryGroup gets a repository group specified by groupID.
-func (client *Client) RepositoryGroup(groupID maventools.GroupID) (RepoGroup, error) {
+func (client *Client) repositoryGroup(groupID maventools.GroupID) (repoGroup, error) {
 	req, err := http.NewRequest("GET", client.baseURL+"/service/local/repo_groups/"+string(groupID), nil)
 	if err != nil {
-		return RepoGroup{}, err
+		return repoGroup{}, err
 	}
 	req.SetBasicAuth(client.username, client.password)
 	req.Header.Add("Accept", "application/json")
 
 	resp, err := client.httpClient.Do(req)
 	if err != nil {
-		return RepoGroup{}, err
+		return repoGroup{}, err
 
 	}
 	defer resp.Body.Close()
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return RepoGroup{}, err
+		return repoGroup{}, err
 	}
 
 	if resp.StatusCode != 200 {
-		return RepoGroup{}, fmt.Errorf("Client.RepositoryGroup(): unexpected response status: %d\n", resp.StatusCode)
+		return repoGroup{}, fmt.Errorf("Client.repositoryGroup(): unexpected response status: %d\n", resp.StatusCode)
 	}
 
-	var repogroup RepoGroup
+	var repogroup repoGroup
 	if err := json.Unmarshal(data, &repogroup); err != nil {
-		return RepoGroup{}, err
+		return repoGroup{}, err
 	}
 	return repogroup, nil
 }
 
 // Add RepositoryToGroup adds the given repository specified by repositoryID to the repository group specified by groupID.
 func (client *Client) AddRepositoryToGroup(repositoryID maventools.RepositoryID, groupID maventools.GroupID) error {
-	repogroup, err := client.RepositoryGroup(groupID)
+	repogroup, err := client.repositoryGroup(groupID)
 	if err != nil {
 		return err
 	}
@@ -247,7 +247,7 @@ func (client *Client) AddRepositoryToGroup(repositoryID maventools.RepositoryID,
 
 // DeleteRepositoryFromGroup removes the given repository specified by repositoryID from the repository group specified by groupID.
 func (client *Client) DeleteRepositoryFromGroup(repositoryID maventools.RepositoryID, groupID maventools.GroupID) error {
-	repogroup, err := client.RepositoryGroup(groupID)
+	repogroup, err := client.repositoryGroup(groupID)
 	if err != nil {
 		return err
 	}
@@ -289,7 +289,7 @@ func (client *Client) DeleteRepositoryFromGroup(repositoryID maventools.Reposito
 	return nil
 }
 
-func repoIsInGroup(repositoryID maventools.RepositoryID, group RepoGroup) bool {
+func repoIsInGroup(repositoryID maventools.RepositoryID, group repoGroup) bool {
 	for _, repo := range group.Data.Repositories {
 		if repo.ID == repositoryID {
 			return true
@@ -298,7 +298,7 @@ func repoIsInGroup(repositoryID maventools.RepositoryID, group RepoGroup) bool {
 	return false
 }
 
-func repoIsNotInGroup(repositoryID maventools.RepositoryID, group RepoGroup) bool {
+func repoIsNotInGroup(repositoryID maventools.RepositoryID, group repoGroup) bool {
 	for _, repo := range group.Data.Repositories {
 		if repo.ID == repositoryID {
 			return false
@@ -307,7 +307,7 @@ func repoIsNotInGroup(repositoryID maventools.RepositoryID, group RepoGroup) boo
 	return true
 }
 
-func removeRepo(repositoryID maventools.RepositoryID, group *RepoGroup) {
+func removeRepo(repositoryID maventools.RepositoryID, group *repoGroup) {
 	ra := make([]repository, 0)
 	for _, repo := range group.Data.Repositories {
 		if repo.ID != repositoryID {
