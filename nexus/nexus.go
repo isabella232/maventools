@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/xoom/maventools"
@@ -168,47 +169,50 @@ func (client *Client) DeleteRepository(repositoryID maventools.RepositoryID) (in
 	return resp.StatusCode, nil
 }
 
-// RepositoryGroup gets a repository group specified by groupID.
-func (client *Client) repositoryGroup(groupID maventools.GroupID) (repoGroup, error) {
+func (client *Client) repositoryGroup(groupID maventools.GroupID) (repoGroup, int, error) {
 	req, err := http.NewRequest("GET", client.baseURL+"/service/local/repo_groups/"+string(groupID), nil)
 	if err != nil {
-		return repoGroup{}, err
+		return repoGroup{}, 0, err
 	}
 	req.SetBasicAuth(client.username, client.password)
 	req.Header.Add("Accept", "application/json")
 
 	resp, err := client.httpClient.Do(req)
 	if err != nil {
-		return repoGroup{}, err
+		return repoGroup{}, 0, err
 
 	}
 	defer resp.Body.Close()
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return repoGroup{}, err
+		return repoGroup{}, 0, err
 	}
 
 	if resp.StatusCode != 200 {
-		return repoGroup{}, fmt.Errorf("Client.repositoryGroup(): unexpected response status: %d\n", resp.StatusCode)
+		return repoGroup{}, resp.StatusCode, fmt.Errorf("Client.repositoryGroup() response status: %d (%s)\n", resp.StatusCode, string(data))
 	}
 
 	var repogroup repoGroup
 	if err := json.Unmarshal(data, &repogroup); err != nil {
-		return repoGroup{}, err
+		return repoGroup{}, 0, err
 	}
-	return repogroup, nil
+	return repogroup, resp.StatusCode, nil
 }
 
 // Add RepositoryToGroup adds the given repository specified by repositoryID to the repository group specified by groupID.
-func (client *Client) AddRepositoryToGroup(repositoryID maventools.RepositoryID, groupID maventools.GroupID) error {
-	repogroup, err := client.repositoryGroup(groupID)
+func (client *Client) AddRepositoryToGroup(repositoryID maventools.RepositoryID, groupID maventools.GroupID) (int, error) {
+	repogroup, rc, err := client.repositoryGroup(groupID)
 	if err != nil {
-		return err
+		return rc, err
+	}
+
+	if rc != 200 {
+		log.Printf("Nexus Client.AddRepositoryToGroup() response code: %d\n", rc)
 	}
 
 	if repoIsInGroup(repositoryID, repogroup) {
-		return nil
+		return 0, nil
 	}
 
 	repo := repository{ID: repositoryID, Name: string(repositoryID), ResourceURI: client.baseURL + "/service/local/repo_groups/" + string(groupID) + "/" + string(repositoryID)}
@@ -216,12 +220,12 @@ func (client *Client) AddRepositoryToGroup(repositoryID maventools.RepositoryID,
 
 	data, err := json.Marshal(&repogroup)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	req, err := http.NewRequest("PUT", client.baseURL+"/service/local/repo_groups/"+string(groupID), bytes.NewBuffer(data))
 	if err != nil {
-		return err
+		return 0, err
 	}
 	req.SetBasicAuth(client.username, client.password)
 	req.Header.Add("Content-type", "application/json")
@@ -229,43 +233,46 @@ func (client *Client) AddRepositoryToGroup(repositoryID maventools.RepositoryID,
 
 	resp, err := client.httpClient.Do(req)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("Client.AddRepositoryToGroup(): unexpected response status: %d (%s)\n", resp.StatusCode, string(body))
+		return resp.StatusCode, fmt.Errorf("Client.AddRepositoryToGroup(): unexpected response status: %d (%s)\n", resp.StatusCode, string(body))
 	}
 
-	return nil
+	return resp.StatusCode, nil
 }
 
 // DeleteRepositoryFromGroup removes the given repository specified by repositoryID from the repository group specified by groupID.
-func (client *Client) DeleteRepositoryFromGroup(repositoryID maventools.RepositoryID, groupID maventools.GroupID) error {
-	repogroup, err := client.repositoryGroup(groupID)
+func (client *Client) DeleteRepositoryFromGroup(repositoryID maventools.RepositoryID, groupID maventools.GroupID) (int, error) {
+	repogroup, rc, err := client.repositoryGroup(groupID)
 	if err != nil {
-		return err
+		return rc, err
+	}
+	if rc != 200 {
+		log.Printf("Nexus Client.AddRepositoryToGroup() response code: %d\n", rc)
 	}
 
 	if repoIsNotInGroup(repositoryID, repogroup) {
-		return nil
+		return 0, nil
 	}
 
 	removeRepo(repositoryID, &repogroup)
 
 	data, err := json.Marshal(&repogroup)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	req, err := http.NewRequest("PUT", client.baseURL+"/service/local/repo_groups/"+string(groupID), bytes.NewBuffer(data))
 	if err != nil {
-		return err
+		return 0, err
 	}
 	req.SetBasicAuth(client.username, client.password)
 	req.Header.Add("Content-type", "application/json")
@@ -273,20 +280,20 @@ func (client *Client) DeleteRepositoryFromGroup(repositoryID maventools.Reposito
 
 	resp, err := client.httpClient.Do(req)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("Client.AddRepositoryToGroup(): unexpected response status: %d (%s)\n", resp.StatusCode, string(body))
+		return resp.StatusCode, fmt.Errorf("Client.AddRepositoryToGroup(): unexpected response status: %d (%s)\n", resp.StatusCode, string(body))
 	}
 
-	return nil
+	return resp.StatusCode, nil
 }
 
 func repoIsInGroup(repositoryID maventools.RepositoryID, group repoGroup) bool {

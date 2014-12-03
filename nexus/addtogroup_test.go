@@ -94,8 +94,12 @@ func TestAddToGroup(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, "user", "password")
-	err := client.AddRepositoryToGroup("somerepo", "agroup")
+	rc, err := client.AddRepositoryToGroup("somerepo", "agroup")
 	if err != nil {
 		t.Fatalf("Expecting no error but got one: %v\n", err)
+	}
+
+	if rc != 200 {
+		t.Fatalf("Want 200 but got %d\n", rc)
 	}
 }
