@@ -19,7 +19,7 @@ type Group struct {
 }
 
 type Client struct {
-	//	ClientOps
+	ClientOps
 	BaseURL    string
 	Username   string
 	Password   string

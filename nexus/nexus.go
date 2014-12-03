@@ -67,8 +67,8 @@ type (
 // NewClient creates a new Nexus client on which subsequent service methods are called.  The baseURL typically takes
 // the form http://host:port/nexus.  username and password are the credentials of an admin user capable of creating and mutating data
 // within Nexus.
-func NewClient(baseURL, username, password string) *Client {
-	return &Client{maventools.Client{baseURL, username, password, &http.Client{}}}
+func NewClient(baseURL, username, password string) Client {
+	return Client{maventools.Client{BaseURL: baseURL, Username: username, Password: password, HttpClient: &http.Client{}}}
 }
 
 // RepositoryExists checks whether a given repository specified by repositoryID exists.
