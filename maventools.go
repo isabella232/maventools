@@ -6,20 +6,8 @@ type RepositoryID string
 
 type GroupID string
 
-type Repository struct {
-	ID   RepositoryID
-	Name string
-}
-
-// Group models a repository group.
-type Group struct {
-	ID           GroupID
-	Name         string
-	Repositories []Repository
-}
-
-type Client struct {
-	ClientOps
+type ClientConfig struct {
+	Client
 	BaseURL    string
 	Username   string
 	Password   string
@@ -27,16 +15,10 @@ type Client struct {
 }
 
 // ClientOps defines the service methods on a Client. Integer return values are the underlying HTTP response codes.
-type ClientOps interface {
+type Client interface {
 	RepositoryExists(RepositoryID) (bool, error)
 	CreateSnapshotRepository(RepositoryID) (int, error)
 	DeleteRepository(RepositoryID) (int, error)
 	AddRepositoryToGroup(RepositoryID, GroupID) (int, error)
 	RemoveRepositoryFromGroup(RepositoryID, GroupID) (int, error)
 }
-
-/*
-func NewNexusClient(baseURL, username, password string) nexus.Client {
-	return nexus.Client{}
-}
-*/
