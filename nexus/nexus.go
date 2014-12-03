@@ -56,11 +56,11 @@ type (
 
 	// A Nexus client
 	Client struct {
-		//		maventools.Client
-		baseURL    string // http://localhost:8081/nexus
-		username   string
-		password   string
-		httpClient *http.Client
+		maventools.Client
+		//baseURL    string // http://localhost:8081/nexus
+		//username   string
+		//password   string
+		//httpClient *http.Client
 	}
 )
 
@@ -68,19 +68,19 @@ type (
 // the form http://host:port/nexus.  username and password are the credentials of an admin user capable of creating and mutating data
 // within Nexus.
 func NewClient(baseURL, username, password string) *Client {
-	return &Client{baseURL, username, password, &http.Client{}}
+	return &Client{maventools.Client{baseURL, username, password, &http.Client{}}}
 }
 
 // RepositoryExists checks whether a given repository specified by repositoryID exists.
 func (client Client) RepositoryExists(repositoryID maventools.RepositoryID) (bool, error) {
-	req, err := http.NewRequest("GET", client.baseURL+"/service/local/repositories/"+string(repositoryID), nil)
+	req, err := http.NewRequest("GET", client.BaseURL+"/service/local/repositories/"+string(repositoryID), nil)
 	if err != nil {
 		return false, err
 	}
-	req.SetBasicAuth(client.username, client.password)
+	req.SetBasicAuth(client.Username, client.Password)
 	req.Header.Add("Accept", "application/json")
 
-	resp, err := client.httpClient.Do(req)
+	resp, err := client.HttpClient.Do(req)
 	if err != nil {
 		return false, err
 	}
@@ -108,7 +108,7 @@ func (client Client) CreateSnapshotRepository(repositoryID maventools.Repository
 			RepoType:           "hosted",
 			RepoPolicy:         "SNAPSHOT",
 			ProviderRole:       "org.sonatype.nexus.proxy.repository.Repository",
-			ContentResourceURI: client.baseURL + "/content/repositories/" + string(repositoryID),
+			ContentResourceURI: client.BaseURL + "/content/repositories/" + string(repositoryID),
 			Format:             "maven2",
 			Exposed:            true,
 		}}
@@ -118,15 +118,15 @@ func (client Client) CreateSnapshotRepository(repositoryID maventools.Repository
 		return 0, err
 	}
 
-	req, err := http.NewRequest("POST", client.baseURL+"/service/local/repositories", bytes.NewBuffer(data))
+	req, err := http.NewRequest("POST", client.BaseURL+"/service/local/repositories", bytes.NewBuffer(data))
 	if err != nil {
 		return 0, err
 	}
-	req.SetBasicAuth(client.username, client.password)
+	req.SetBasicAuth(client.Username, client.Password)
 	req.Header.Add("Content-type", "application/xml")
 	req.Header.Add("Accept", "application/json")
 
-	resp, err := client.httpClient.Do(req)
+	resp, err := client.HttpClient.Do(req)
 	if err != nil {
 		return 0, err
 	}
@@ -146,14 +146,14 @@ func (client Client) CreateSnapshotRepository(repositoryID maventools.Repository
 
 // DeleteRepository deletes the repository with the given repositoryID.
 func (client Client) DeleteRepository(repositoryID maventools.RepositoryID) (int, error) {
-	req, err := http.NewRequest("DELETE", client.baseURL+"/service/local/repositories/"+string(repositoryID), nil)
+	req, err := http.NewRequest("DELETE", client.BaseURL+"/service/local/repositories/"+string(repositoryID), nil)
 	if err != nil {
 		return 0, err
 	}
-	req.SetBasicAuth(client.username, client.password)
+	req.SetBasicAuth(client.Username, client.Password)
 	req.Header.Add("Accept", "application/json")
 
-	resp, err := client.httpClient.Do(req)
+	resp, err := client.HttpClient.Do(req)
 	if err != nil {
 		return 0, err
 	}
@@ -171,14 +171,14 @@ func (client Client) DeleteRepository(repositoryID maventools.RepositoryID) (int
 }
 
 func (client Client) repositoryGroup(groupID maventools.GroupID) (repoGroup, int, error) {
-	req, err := http.NewRequest("GET", client.baseURL+"/service/local/repo_groups/"+string(groupID), nil)
+	req, err := http.NewRequest("GET", client.BaseURL+"/service/local/repo_groups/"+string(groupID), nil)
 	if err != nil {
 		return repoGroup{}, 0, err
 	}
-	req.SetBasicAuth(client.username, client.password)
+	req.SetBasicAuth(client.Username, client.Password)
 	req.Header.Add("Accept", "application/json")
 
-	resp, err := client.httpClient.Do(req)
+	resp, err := client.HttpClient.Do(req)
 	if err != nil {
 		return repoGroup{}, 0, err
 
@@ -216,7 +216,7 @@ func (client Client) AddRepositoryToGroup(repositoryID maventools.RepositoryID, 
 		return 0, nil
 	}
 
-	repo := repository{ID: repositoryID, Name: string(repositoryID), ResourceURI: client.baseURL + "/service/local/repo_groups/" + string(groupID) + "/" + string(repositoryID)}
+	repo := repository{ID: repositoryID, Name: string(repositoryID), ResourceURI: client.BaseURL + "/service/local/repo_groups/" + string(groupID) + "/" + string(repositoryID)}
 	repogroup.Data.Repositories = append(repogroup.Data.Repositories, repo)
 
 	data, err := json.Marshal(&repogroup)
@@ -224,15 +224,15 @@ func (client Client) AddRepositoryToGroup(repositoryID maventools.RepositoryID, 
 		return 0, err
 	}
 
-	req, err := http.NewRequest("PUT", client.baseURL+"/service/local/repo_groups/"+string(groupID), bytes.NewBuffer(data))
+	req, err := http.NewRequest("PUT", client.BaseURL+"/service/local/repo_groups/"+string(groupID), bytes.NewBuffer(data))
 	if err != nil {
 		return 0, err
 	}
-	req.SetBasicAuth(client.username, client.password)
+	req.SetBasicAuth(client.Username, client.Password)
 	req.Header.Add("Content-type", "application/json")
 	req.Header.Add("Accept", "application/json")
 
-	resp, err := client.httpClient.Do(req)
+	resp, err := client.HttpClient.Do(req)
 	if err != nil {
 		return 0, err
 	}
@@ -271,15 +271,15 @@ func (client Client) DeleteRepositoryFromGroup(repositoryID maventools.Repositor
 		return 0, err
 	}
 
-	req, err := http.NewRequest("PUT", client.baseURL+"/service/local/repo_groups/"+string(groupID), bytes.NewBuffer(data))
+	req, err := http.NewRequest("PUT", client.BaseURL+"/service/local/repo_groups/"+string(groupID), bytes.NewBuffer(data))
 	if err != nil {
 		return 0, err
 	}
-	req.SetBasicAuth(client.username, client.password)
+	req.SetBasicAuth(client.Username, client.Password)
 	req.Header.Add("Content-type", "application/json")
 	req.Header.Add("Accept", "application/json")
 
-	resp, err := client.httpClient.Do(req)
+	resp, err := client.HttpClient.Do(req)
 	if err != nil {
 		return 0, err
 	}

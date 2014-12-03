@@ -19,11 +19,11 @@ type Group struct {
 }
 
 type Client struct {
-	ClientOps
-	baseURL    string
-	username   string
-	password   string
-	httpClient *http.Client
+	//	ClientOps
+	BaseURL    string
+	Username   string
+	Password   string
+	HttpClient *http.Client
 }
 
 // ClientOps defines the service methods on a Client. Integer return values are the underlying HTTP response codes.
