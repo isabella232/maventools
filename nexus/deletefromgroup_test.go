@@ -79,7 +79,7 @@ func TestDeleteFromGroup(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, "user", "password")
-	rc, err := client.DeleteRepositoryFromGroup("plat.trnk.trnk679", "agroup")
+	rc, err := client.RemoveRepositoryFromGroup("plat.trnk.trnk679", "agroup")
 	if err != nil {
 		t.Fatalf("Expecting no error but got one: %v\n", err)
 	}
@@ -87,7 +87,7 @@ func TestDeleteFromGroup(t *testing.T) {
 		t.Fatalf("Want 200 but got: %d\n", rc)
 	}
 
-	rc, err = client.DeleteRepositoryFromGroup("notpresent", "agroup")
+	rc, err = client.RemoveRepositoryFromGroup("notpresent", "agroup")
 	if err != nil {
 		t.Fatalf("Expecting no error but got one: %v\n", err)
 	}

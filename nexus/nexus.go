@@ -246,7 +246,7 @@ func (client Client) AddRepositoryToGroup(repositoryID maventools.RepositoryID, 
 }
 
 // DeleteRepositoryFromGroup removes the given repository specified by repositoryID from the repository group specified by groupID.
-func (client Client) DeleteRepositoryFromGroup(repositoryID maventools.RepositoryID, groupID maventools.GroupID) (int, error) {
+func (client Client) RemoveRepositoryFromGroup(repositoryID maventools.RepositoryID, groupID maventools.GroupID) (int, error) {
 	repogroup, rc, err := client.repositoryGroup(groupID)
 	if err != nil {
 		return rc, err
