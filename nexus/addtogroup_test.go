@@ -63,7 +63,7 @@ func TestAddToGroup(t *testing.T) {
 			t.Fatalf("Not expecting an error but got one: %v\n", err)
 		}
 
-		var repogroup repoGroup
+		var repogroup RepoGroup
 		if err := json.Unmarshal(data, &repogroup); err != nil {
 			t.Fatalf("Not expecting an error but got one: %v\n", err)
 		}

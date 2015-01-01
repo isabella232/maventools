@@ -54,7 +54,7 @@ func TestGetRepoGroup(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, "user", "password")
-	group, rc, err := client.repositoryGroup("snapshotgroup")
+	group, rc, err := client.RepositoryGroup("snapshotgroup")
 
 	if err != nil {
 		t.Fatalf("Expecting no error but got one: %v\n", err)
@@ -108,7 +108,7 @@ func TestGetRepoGroupNotFound(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, "user", "password")
-	_, rc, err := client.repositoryGroup("snapshotgroup")
+	_, rc, err := client.RepositoryGroup("snapshotgroup")
 
 	if err == nil {
 		t.Fatalf("Expecting an error but got none\n")

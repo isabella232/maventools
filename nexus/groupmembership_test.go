@@ -3,11 +3,11 @@ package nexus
 import "testing"
 
 func TestGroupMembership(t *testing.T) {
-	ra := []repository{
+	ra := []Repository{
 		{ID: "foo", Name: "foo", ResourceURI: "blah"},
 		{ID: "bar", Name: "bar", ResourceURI: "blah"},
 	}
-	group := repoGroup{Data: RepositoryGroupData{Repositories: ra}}
+	group := RepoGroup{Data: RepositoryGroupData{Repositories: ra}}
 
 	present := repoIsInGroup("foo", group)
 	if !present {
