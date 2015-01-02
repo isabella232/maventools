@@ -173,40 +173,21 @@ func (client Client) DeleteRepository(repositoryID maventools.RepositoryID) (int
 	return resp.StatusCode, nil
 }
 
-func (client Client) RepositoryGroup(groupID maventools.GroupID) (repoGroup, int, error) {
-	req, err := http.NewRequest("GET", client.BaseURL+"/service/local/repo_groups/"+string(groupID), nil)
+// RepositoryGroup returns a representation of the given repository group ID.
+func (client Client) RepositoryGroup(groupID maventools.GroupID) (maventools.RepositoryGroup, int, error) {
+	repoGroup, rc, err := client.repositoryGroup(groupID)
 	if err != nil {
-		return repoGroup{}, 0, err
+		return maventools.RepositoryGroup{}, rc, err
 	}
-	req.SetBasicAuth(client.Username, client.Password)
-	req.Header.Add("Accept", "application/json")
-
-	resp, err := client.HttpClient.Do(req)
-	if err != nil {
-		return repoGroup{}, 0, err
-
+	if rc != 200 {
+		return maventools.RepositoryGroup{}, rc, nil
 	}
-	defer resp.Body.Close()
-
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return repoGroup{}, 0, err
-	}
-
-	if resp.StatusCode != 200 {
-		return repoGroup{}, resp.StatusCode, fmt.Errorf("Client.repositoryGroup() response status: %d (%s)\n", resp.StatusCode, string(data))
-	}
-
-	var repogroup repoGroup
-	if err := json.Unmarshal(data, &repogroup); err != nil {
-		return repoGroup{}, 0, err
-	}
-	return repogroup, resp.StatusCode, nil
+	return canonicalize(repoGroup), rc, nil
 }
 
-// Add RepositoryToGroup adds the given repository specified by repositoryID to the repository group specified by groupID.
+// AddRepositoryToGroup adds the given repository specified by repositoryID to the repository group specified by groupID.
 func (client Client) AddRepositoryToGroup(repositoryID maventools.RepositoryID, groupID maventools.GroupID) (int, error) {
-	repogroup, rc, err := client.RepositoryGroup(groupID)
+	repogroup, rc, err := client.repositoryGroup(groupID)
 	if err != nil {
 		return rc, err
 	}
@@ -255,7 +236,7 @@ func (client Client) AddRepositoryToGroup(repositoryID maventools.RepositoryID, 
 
 // DeleteRepositoryFromGroup removes the given repository specified by repositoryID from the repository group specified by groupID.
 func (client Client) RemoveRepositoryFromGroup(repositoryID maventools.RepositoryID, groupID maventools.GroupID) (int, error) {
-	repogroup, rc, err := client.RepositoryGroup(groupID)
+	repogroup, rc, err := client.repositoryGroup(groupID)
 	if err != nil {
 		return rc, err
 	}
@@ -300,6 +281,37 @@ func (client Client) RemoveRepositoryFromGroup(repositoryID maventools.Repositor
 	return resp.StatusCode, nil
 }
 
+func (client Client) repositoryGroup(groupID maventools.GroupID) (repoGroup, int, error) {
+	req, err := http.NewRequest("GET", client.BaseURL+"/service/local/repo_groups/"+string(groupID), nil)
+	if err != nil {
+		return repoGroup{}, 0, err
+	}
+	req.SetBasicAuth(client.Username, client.Password)
+	req.Header.Add("Accept", "application/json")
+
+	resp, err := client.HttpClient.Do(req)
+	if err != nil {
+		return repoGroup{}, 0, err
+
+	}
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return repoGroup{}, 0, err
+	}
+
+	if resp.StatusCode != 200 {
+		return repoGroup{}, resp.StatusCode, fmt.Errorf("Client.repositoryGroup() response status: %d (%s)\n", resp.StatusCode, string(data))
+	}
+
+	var repogroup repoGroup
+	if err := json.Unmarshal(data, &repogroup); err != nil {
+		return repoGroup{}, 0, err
+	}
+	return repogroup, resp.StatusCode, nil
+}
+
 func repoIsInGroup(repositoryID maventools.RepositoryID, group repoGroup) bool {
 	for _, repo := range group.Data.Repositories {
 		if repo.ID == repositoryID {
@@ -326,4 +338,18 @@ func removeRepo(repositoryID maventools.RepositoryID, group *repoGroup) {
 		}
 	}
 	group.Data.Repositories = ra
+}
+
+func canonicalize(nexusRepositoryGroup repoGroup) maventools.RepositoryGroup {
+	c := maventools.RepositoryGroup{
+		ID:                 nexusRepositoryGroup.Data.ID,
+		Name:               nexusRepositoryGroup.Data.Name,
+		ContentResourceURI: nexusRepositoryGroup.Data.ContentResourceURI,
+		Repositories:       make([]maventools.Repository, 0),
+	}
+	for _, r := range nexusRepositoryGroup.Data.Repositories {
+		r := maventools.Repository{ID: r.ID, Name: r.Name, ResourceURI: r.ResourceURI}
+		c.Repositories = append(c.Repositories, r)
+	}
+	return c
 }
