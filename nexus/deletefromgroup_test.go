@@ -63,7 +63,7 @@ func TestDeleteFromGroup(t *testing.T) {
 			t.Fatalf("Not expecting an error but got one: %v\n", err)
 		}
 
-		var repogroup RepoGroup
+		var repogroup repoGroup
 		if err := json.Unmarshal(data, &repogroup); err != nil {
 			t.Fatalf("Not expecting an error but got one: %v\n", err)
 		}
