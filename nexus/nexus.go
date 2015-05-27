@@ -9,7 +9,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/ae6rt/retry"
 	"github.com/xoom/maventools"
+	"time"
 )
 
 type (
@@ -72,28 +74,35 @@ func NewClient(baseURL, username, password string) Client {
 
 // RepositoryExists checks whether a given repository specified by repositoryID exists.
 func (client Client) RepositoryExists(repositoryID maventools.RepositoryID) (bool, error) {
-	req, err := http.NewRequest("GET", client.BaseURL+"/service/local/repositories/"+string(repositoryID), nil)
-	if err != nil {
-		return false, err
-	}
-	req.SetBasicAuth(client.Username, client.Password)
-	req.Header.Add("Accept", "application/json")
+	retry := retry.New(3*time.Second, 3, retry.DefaultBackoffFunc)
+	var exists bool
 
-	resp, err := client.HttpClient.Do(req)
-	if err != nil {
-		return false, err
-	}
-	defer resp.Body.Close()
+	work := func() error {
+		req, err := http.NewRequest("GET", client.BaseURL+"/service/local/repositories/"+string(repositoryID), nil)
+		if err != nil {
+			return err
+		}
+		req.SetBasicAuth(client.Username, client.Password)
+		req.Header.Add("Accept", "application/json")
 
-	if _, err := ioutil.ReadAll(resp.Body); err != nil {
-		return false, err
+		resp, err := client.HttpClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		if _, err := ioutil.ReadAll(resp.Body); err != nil {
+			return err
+		}
+
+		if resp.StatusCode != 200 && resp.StatusCode != 404 {
+			return fmt.Errorf("Client.RepositoryExists(): unexpected response status: %d\n", resp.StatusCode)
+		}
+		exists = resp.StatusCode == 200
+		return nil
 	}
 
-	if resp.StatusCode != 200 && resp.StatusCode != 404 {
-		return false, fmt.Errorf("Client.RepositoryExists(): unexpected response status: %d\n", resp.StatusCode)
-	}
-
-	return resp.StatusCode == 200, nil
+	return exists, retry.Try(work)
 }
 
 // CreateSnapshotRepository creates a new hosted Maven2 SNAPSHOT repository with the given repositoryID.  The repository name
@@ -149,28 +158,34 @@ func (client Client) CreateSnapshotRepository(repositoryID maventools.Repository
 
 // DeleteRepository deletes the repository with the given repositoryID.
 func (client Client) DeleteRepository(repositoryID maventools.RepositoryID) (int, error) {
-	req, err := http.NewRequest("DELETE", client.BaseURL+"/service/local/repositories/"+string(repositoryID), nil)
-	if err != nil {
-		return 0, err
-	}
-	req.SetBasicAuth(client.Username, client.Password)
-	req.Header.Add("Accept", "application/json")
+	retry := retry.New(3*time.Second, 3, retry.DefaultBackoffFunc)
+	var responseCode int
+	work := func() error {
+		req, err := http.NewRequest("DELETE", client.BaseURL+"/service/local/repositories/"+string(repositoryID), nil)
+		if err != nil {
+			return err
+		}
+		req.SetBasicAuth(client.Username, client.Password)
+		req.Header.Add("Accept", "application/json")
 
-	resp, err := client.HttpClient.Do(req)
-	if err != nil {
-		return 0, err
-	}
-	defer resp.Body.Close()
+		resp, err := client.HttpClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
 
-	if _, err := ioutil.ReadAll(resp.Body); err != nil {
-		return 0, err
+		if _, err := ioutil.ReadAll(resp.Body); err != nil {
+			return err
+		}
+
+		responseCode = resp.StatusCode
+		if resp.StatusCode != 204 && resp.StatusCode != 404 {
+			return fmt.Errorf("Client.DeleteRepository() response: %d\n", resp.StatusCode)
+		}
+		return nil
 	}
 
-	if resp.StatusCode != 204 && resp.StatusCode != 404 {
-		return resp.StatusCode, fmt.Errorf("Client.DeleteRepository() response: %d\n", resp.StatusCode)
-	}
-
-	return resp.StatusCode, nil
+	return responseCode, retry.Try(work)
 }
 
 // RepositoryGroup returns a representation of the given repository group ID.
@@ -255,61 +270,76 @@ func (client Client) RemoveRepositoryFromGroup(repositoryID maventools.Repositor
 		return 0, err
 	}
 
-	req, err := http.NewRequest("PUT", client.BaseURL+"/service/local/repo_groups/"+string(groupID), bytes.NewBuffer(data))
-	if err != nil {
-		return 0, err
-	}
-	req.SetBasicAuth(client.Username, client.Password)
-	req.Header.Add("Content-type", "application/json")
-	req.Header.Add("Accept", "application/json")
+	retry := retry.New(3*time.Second, 3, retry.DefaultBackoffFunc)
+	var responseCode int
+	work := func() error {
+		req, err := http.NewRequest("PUT", client.BaseURL+"/service/local/repo_groups/"+string(groupID), bytes.NewBuffer(data))
+		if err != nil {
+			return err
+		}
+		req.SetBasicAuth(client.Username, client.Password)
+		req.Header.Add("Content-type", "application/json")
+		req.Header.Add("Accept", "application/json")
 
-	resp, err := client.HttpClient.Do(req)
-	if err != nil {
-		return 0, err
-	}
-	defer resp.Body.Close()
+		resp, err := client.HttpClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return 0, err
-	}
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
 
-	if resp.StatusCode != 200 {
-		return resp.StatusCode, fmt.Errorf("Client.AddRepositoryToGroup(): unexpected response status: %d (%s)\n", resp.StatusCode, string(body))
+		responseCode = resp.StatusCode
+		if responseCode != 200 {
+			return fmt.Errorf("Client.AddRepositoryToGroup(): unexpected response status: %d (%s)\n", responseCode, string(body))
+		}
+		return nil
 	}
-
-	return resp.StatusCode, nil
+	return responseCode, retry.Try(work)
 }
 
 func (client Client) repositoryGroup(groupID maventools.GroupID) (repoGroup, int, error) {
-	req, err := http.NewRequest("GET", client.BaseURL+"/service/local/repo_groups/"+string(groupID), nil)
-	if err != nil {
-		return repoGroup{}, 0, err
+	retry := retry.New(3*time.Second, 3, retry.DefaultBackoffFunc)
+	var data []byte
+	var responseCode int
+	work := func() error {
+		req, err := http.NewRequest("GET", client.BaseURL+"/service/local/repo_groups/"+string(groupID), nil)
+		if err != nil {
+			return err
+		}
+		req.SetBasicAuth(client.Username, client.Password)
+		req.Header.Add("Accept", "application/json")
+
+		resp, err := client.HttpClient.Do(req)
+		if err != nil {
+			return err
+
+		}
+		defer resp.Body.Close()
+
+		data, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		responseCode = resp.StatusCode
+		if responseCode != 200 {
+			return fmt.Errorf("Client.repositoryGroup() response status: %d (%s)\n", responseCode, string(data))
+		}
+		return nil
 	}
-	req.SetBasicAuth(client.Username, client.Password)
-	req.Header.Add("Accept", "application/json")
-
-	resp, err := client.HttpClient.Do(req)
-	if err != nil {
-		return repoGroup{}, 0, err
-
-	}
-	defer resp.Body.Close()
-
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return repoGroup{}, 0, err
-	}
-
-	if resp.StatusCode != 200 {
-		return repoGroup{}, resp.StatusCode, fmt.Errorf("Client.repositoryGroup() response status: %d (%s)\n", resp.StatusCode, string(data))
+	if err := retry.Try(work); err != nil {
+		return repoGroup{}, responseCode, err
 	}
 
 	var repogroup repoGroup
 	if err := json.Unmarshal(data, &repogroup); err != nil {
 		return repoGroup{}, 0, err
 	}
-	return repogroup, resp.StatusCode, nil
+	return repogroup, responseCode, nil
 }
 
 func repoIsInGroup(repositoryID maventools.RepositoryID, group repoGroup) bool {
