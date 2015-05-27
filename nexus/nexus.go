@@ -95,10 +95,10 @@ func (client Client) RepositoryExists(repositoryID maventools.RepositoryID) (boo
 			return err
 		}
 
+		exists = resp.StatusCode == 200
 		if resp.StatusCode != 200 && resp.StatusCode != 404 {
 			return fmt.Errorf("Client.RepositoryExists(): unexpected response status: %d\n", resp.StatusCode)
 		}
-		exists = resp.StatusCode == 200
 		return nil
 	}
 
@@ -179,8 +179,8 @@ func (client Client) DeleteRepository(repositoryID maventools.RepositoryID) (int
 		}
 
 		responseCode = resp.StatusCode
-		if resp.StatusCode != 204 && resp.StatusCode != 404 {
-			return fmt.Errorf("Client.DeleteRepository() response: %d\n", resp.StatusCode)
+		if responseCode != 204 && responseCode != 404 {
+			return fmt.Errorf("Client.DeleteRepository() response: %d\n", responseCode)
 		}
 		return nil
 	}
