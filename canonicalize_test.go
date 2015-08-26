@@ -1,14 +1,12 @@
-package nexus
+package maventools
 
 import (
 	"testing"
-
-	"github.com/xoom/maventools"
 )
 
 func TestCanonicalize(t *testing.T) {
-	g := RepositoryGroupData{ID: maventools.GroupID("theid"), Name: "thename", ContentResourceURI: "http://foo/bar", Repositories: make([]repository, 0)}
-	r := repository{ID: maventools.RepositoryID("therepoid"), Name: "thereponame", ResourceURI: "http://repo"}
+	g := RepositoryGroupData{ID: GroupID("theid"), Name: "thename", ContentResourceURI: "http://foo/bar", Repositories: make([]repository, 0)}
+	r := repository{ID: RepositoryID("therepoid"), Name: "thereponame", ResourceURI: "http://repo"}
 	g.Repositories = append(g.Repositories, r)
 
 	c := canonicalize(repoGroup{Data: g})

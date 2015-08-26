@@ -1,18 +1,16 @@
-package nexus
+package maventools
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/xoom/maventools"
 )
 
-func TestRepoExists(t *testing.T) {
+func TestDeleteRepo(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			t.Fatalf("Wanted GET but got %s\n", r.Method)
+		if r.Method != "DELETE" {
+			t.Fatalf("Wanted DELETE but got %s\n", r.Method)
 		}
 		if !strings.HasSuffix(r.URL.Path, "/service/local/repositories/somerepo") {
 			t.Fatalf("Wanted URL suffix /service/local/repositories/somerepo but got: %s\n", r.URL.Path)
@@ -28,48 +26,48 @@ func TestRepoExists(t *testing.T) {
 		if base64 != "dXNlcjpwYXNzd29yZA==" {
 			t.Fatalf("Wanted dXNlcjpwYXNzd29yZA== but got %s\n", base64)
 		}
-		w.WriteHeader(200)
+		w.WriteHeader(204)
 	}))
 	defer server.Close()
 
-	var client maventools.Client
-	client = NewClient(server.URL, "user", "password")
-	exists, err := client.RepositoryExists("somerepo")
+	client := NewClient(server.URL, "user", "password")
+	i, err := client.DeleteRepository("somerepo")
 	if err != nil {
 		t.Fatalf("Expecting no error but got one: %v\n", err)
 	}
-
-	if !exists {
-		t.Fatalf("Wanted true but got false")
+	if i != 204 {
+		t.Fatalf("Want 204 but got %d\n", i)
 	}
 }
 
-func TestRepoNotExists(t *testing.T) {
+func TestDeleteRepoNotFound(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
 	}))
 	defer server.Close()
 
 	client := NewClient(server.URL, "user", "password")
-	exists, err := client.RepositoryExists("somerepo")
+	i, err := client.DeleteRepository("somerepo")
 	if err != nil {
 		t.Fatalf("Expecting no error but got one: %v\n", err)
 	}
-
-	if exists {
-		t.Fatalf("Wanted false but got true")
+	if i != 404 {
+		t.Fatalf("Want 404 but got %d\n", i)
 	}
 }
 
-func TestRepoExistsError(t *testing.T) {
+func TestDeleteRepoUnexpectedResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(401)
 	}))
 	defer server.Close()
 
 	client := NewClient(server.URL, "user", "password")
-	_, err := client.RepositoryExists("somerepo")
+	i, err := client.DeleteRepository("somerepo")
 	if err == nil {
-		t.Fatalf("Expecting error but got none\n")
+		t.Fatalf("Expecting an error but got none\n")
+	}
+	if i != 401 {
+		t.Fatalf("Want 401 but got %d\n", i)
 	}
 }
