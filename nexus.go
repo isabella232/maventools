@@ -72,13 +72,7 @@ func NewNexusClient(baseURL, username, password string) NexusClient {
 
 // RepositoryExists checks whether a given repository specified by repositoryID exists.
 func (client NexusClient) RepositoryExists(repositoryID RepositoryID) (bool, error) {
-	retry := retry.New(16*time.Second, 5, func(attempts uint) {
-		Log.Printf("RepositoryExists with-backoff try %d\n", attempts+1)
-		if attempts == 0 {
-			return
-		}
-		time.Sleep((1 << attempts) * time.Second)
-	})
+	retry := retry.New(3*time.Second, 3, retry.DefaultBackoffFunc)
 
 	var responseCode int
 	work := func() error {
