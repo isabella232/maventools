@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"time"
 
 	"github.com/ae6rt/retry"
 )
@@ -72,7 +71,7 @@ func NewNexusClient(baseURL, username, password string) NexusClient {
 
 // RepositoryExists checks whether a given repository specified by repositoryID exists.
 func (client NexusClient) RepositoryExists(repositoryID RepositoryID) (bool, error) {
-	retry := retry.New(3*time.Second, 3, retry.DefaultBackoffFunc)
+	retry := retry.New(3, retry.DefaultBackoffFunc)
 
 	var responseCode int
 	work := func() error {
@@ -151,7 +150,7 @@ func (client NexusClient) CreateSnapshotRepository(repositoryID RepositoryID) (i
 
 // DeleteRepository deletes the repository with the given repositoryID.
 func (client NexusClient) DeleteRepository(repositoryID RepositoryID) (int, error) {
-	retry := retry.New(3*time.Second, 3, retry.DefaultBackoffFunc)
+	retry := retry.New(3, retry.DefaultBackoffFunc)
 	var responseCode int
 	work := func() error {
 		req, err := http.NewRequest("DELETE", client.BaseURL+"/service/local/repositories/"+string(repositoryID), nil)
@@ -265,7 +264,7 @@ func (client NexusClient) RemoveRepositoryFromGroup(repositoryID RepositoryID, g
 		return 0, err
 	}
 
-	retry := retry.New(3*time.Second, 3, retry.DefaultBackoffFunc)
+	retry := retry.New(3, retry.DefaultBackoffFunc)
 	var responseCode int
 	work := func() error {
 		req, err := http.NewRequest("PUT", client.BaseURL+"/service/local/repo_groups/"+string(groupID), bytes.NewBuffer(data))
@@ -297,7 +296,7 @@ func (client NexusClient) RemoveRepositoryFromGroup(repositoryID RepositoryID, g
 }
 
 func (client NexusClient) repositoryGroup(groupID GroupID) (repoGroup, int, error) {
-	retry := retry.New(3*time.Second, 3, retry.DefaultBackoffFunc)
+	retry := retry.New(3, retry.DefaultBackoffFunc)
 	var data []byte
 	var responseCode int
 	work := func() error {
