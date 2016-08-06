@@ -1,5 +1,5 @@
 all:
-	GO15VENDOREXPERIMENT=0 go fmt
-	GO15VENDOREXPERIMENT=0 go clean
-	GO15VENDOREXPERIMENT=0 godep go test -v
-	GO15VENDOREXPERIMENT=0 godep go build
+	go fmt
+	go vet
+	go test 
+	go install
